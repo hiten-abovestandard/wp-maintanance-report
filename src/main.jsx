@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import React, { useState } from "react";
+import ReactDOM from "react-dom/client";
 
 const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');`;
 
@@ -460,3 +461,9 @@ export default function App() {
     </div>
   );
 }
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
