@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Label, Input, Tag, Section, Card, ErrorMsg, DynamicList, uid, todayISO, isoToDMY } from "./ui";
 import { saveReport } from "./reportsApi";
+import { useAutosave } from "./useAutosave";
 
 function blankFields() {
   return {
@@ -15,7 +16,7 @@ function blankFields() {
   };
 }
 
-export default function ReportEditor({ report, onClose, onPreview }) {
+export default function ReportEditor({ report, onClose, onPreview, onIdAssigned }) {
   const [id, setId] = useState(report?.id ?? null);
   const [status, setStatus] = useState(report?.status ?? "draft");
   const [dateISO, setDateISO] = useState(report?.report_date ?? todayISO());
@@ -39,17 +40,21 @@ export default function ReportEditor({ report, onClose, onPreview }) {
   };
 
   const persist = async (nextStatus) => {
+    const wasNew = !id;
     setSaving(true);
     try {
       const row = await saveReport({ id, report_date: dateISO, status: nextStatus, data: fields });
       setId(row.id);
       setStatus(row.status);
       setSavedAt(new Date());
+      if (wasNew) onIdAssigned?.(row.id);
       return row;
     } finally {
       setSaving(false);
     }
   };
+
+  useAutosave(JSON.stringify({ dateISO, fields }), () => { persist(status); });
 
   const saveDraft = async () => {
     await persist(status);
@@ -80,7 +85,9 @@ export default function ReportEditor({ report, onClose, onPreview }) {
           color:"var(--muted)",cursor:"pointer",padding:"8px 16px",fontSize:13,fontFamily:"'DM Sans',sans-serif"}}>
           ← Back to Reports
         </button>
-        {savedAt && <span style={{fontSize:12,color:"var(--accent)"}}>✓ Saved</span>}
+        {saving
+          ? <span style={{fontSize:12,color:"var(--muted)"}}>Saving…</span>
+          : savedAt && <span style={{fontSize:12,color:"var(--accent)"}}>✓ Saved</span>}
       </div>
 
       {/* Header */}
