@@ -3,16 +3,28 @@ import ReactDOM from "react-dom/client";
 import { FONTS, css } from "./ui";
 import { supabase } from "./supabaseClient";
 import { getReport } from "./reportsApi";
+import { getProfile } from "./fullstack/fullstackApi";
 import Login from "./Login";
 import ReportsList from "./ReportsList";
 import ReportEditor from "./ReportEditor";
 import ReportView from "./ReportView";
 import ClientReport from "./ClientReport";
+import AdminApp from "./fullstack/AdminApp";
+import TesterApp from "./fullstack/TesterApp";
 
-function Header({ email, onSignOut }) {
+const ROLE_LABEL = {
+  wordpress: { admin: "WordPress Admin" },
+  fullstack: { admin: "Full-Stack Admin", tester: "Full-Stack Tester" },
+};
+
+function Header({ email, roleLabel, onSignOut }) {
   return (
     <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:12,
       padding:"14px 20px",borderBottom:"1px solid var(--border)"}}>
+      {roleLabel && (
+        <span style={{fontSize:11,letterSpacing:"0.06em",textTransform:"uppercase",
+          color:"var(--accent)",fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{roleLabel}</span>
+      )}
       <span style={{fontSize:12,color:"var(--muted)"}}>{email}</span>
       <button onClick={onSignOut}
         style={{background:"none",border:"1px solid var(--border)",borderRadius:8,
@@ -32,6 +44,17 @@ function parseHash() {
     if (parts[2] === "client") return { name: "client", id: parts[1] };
     return { name: "editor", id: parts[1] };
   }
+  if (parts[0] === "fs") {
+    if (parts[1] === "tasks") {
+      if (parts[2] === "new") return { name: "fs-task-new" };
+      if (parts[2] && parts[3] === "report") return { name: "fs-task-report", id: parts[2] };
+      return { name: "fs-tasks" };
+    }
+    if (parts[1] === "settings") return { name: "fs-settings" };
+    if (parts[1] === "testers") return { name: "fs-testers" };
+    if (parts[1] === "my-tasks") return { name: "fs-my-tasks" };
+    if (parts[1] === "task" && parts[2]) return { name: "fs-task-detail", id: parts[2] };
+  }
   return { name: "list" };
 }
 
@@ -40,8 +63,20 @@ const goNew = () => { location.hash = "#/report/new"; };
 const goEditor = (id) => { location.hash = `#/report/${id}`; };
 const goClient = (id) => { location.hash = `#/report/${id}/client`; };
 
+const fsNav = {
+  goFsTasks: () => { location.hash = "#/fs/tasks"; },
+  goFsTaskNew: () => { location.hash = "#/fs/tasks/new"; },
+  goFsTaskReport: (id) => { location.hash = `#/fs/tasks/${id}/report`; },
+  goFsSettings: () => { location.hash = "#/fs/settings"; },
+  goFsTesters: () => { location.hash = "#/fs/testers"; },
+  goFsMyTasks: () => { location.hash = "#/fs/my-tasks"; },
+  goFsTaskDetail: (id) => { location.hash = `#/fs/task/${id}`; },
+};
+
 export default function App() {
   const [session, setSession] = useState(undefined); // undefined = loading, null = signed out
+  const [profile, setProfile] = useState(undefined); // undefined = loading, null = none found
+  const [profileError, setProfileError] = useState("");
   const [route, setRoute] = useState(parseHash());
   const [routeData, setRouteData] = useState(null);
   const [routeLoading, setRouteLoading] = useState(false);
@@ -61,7 +96,23 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setProfile(undefined); return; }
+    setProfile(undefined);
+    setProfileError("");
+    getProfile(session.user.id)
+      .then(setProfile)
+      .catch(e => { setProfileError(e.message); setProfile(null); });
+  }, [session]);
+
+  useEffect(() => {
+    if (!profile) return;
+    if (profile.department === "fullstack" && route.name === "list") {
+      location.hash = profile.role === "admin" ? "#/fs/tasks" : "#/fs/my-tasks";
+    }
+  }, [profile, route.name]);
+
+  useEffect(() => {
+    if (!session || profile?.department !== "wordpress") return;
     if ((route.name === "editor" || route.name === "client") && route.id) {
       setRouteLoading(true);
       setRouteError("");
@@ -72,7 +123,7 @@ export default function App() {
     } else {
       setRouteData(null);
     }
-  }, [route.name, route.id, session]);
+  }, [route.name, route.id, session, profile]);
 
   const onIdAssigned = (id) => {
     history.replaceState(null, "", `${location.pathname}${location.search}#/report/${id}`);
@@ -86,8 +137,35 @@ export default function App() {
     return <div><style>{FONTS}{css}</style><Login /></div>;
   }
 
+  if (profile === undefined) {
+    return <div style={{maxWidth:820,margin:"0 auto",padding:"40px 20px"}}><style>{FONTS}{css}</style></div>;
+  }
+
+  if (!profile || profile.blocked) {
+    const message = profile?.blocked
+      ? "Your account has been blocked. Contact your admin."
+      : profileError || "No access has been set up for this account yet. Contact your admin.";
+    return (
+      <div>
+        <style>{FONTS}{css}</style>
+        <div style={{maxWidth:420,margin:"0 auto",padding:"80px 20px",textAlign:"center"}}>
+          <div style={{color:"var(--muted)",fontSize:14,marginBottom:20}}>{message}</div>
+          <button onClick={() => supabase.auth.signOut()}
+            style={{background:"none",border:"1px solid var(--border)",borderRadius:8,
+              color:"var(--muted)",cursor:"pointer",padding:"8px 16px",fontSize:13}}>
+            Sign Out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   let body;
-  if (route.name === "list") {
+  if (profile.department === "fullstack") {
+    body = profile.role === "admin"
+      ? <AdminApp route={route} nav={fsNav} />
+      : <TesterApp route={route} profile={profile} nav={fsNav} />;
+  } else if (route.name === "list") {
     body = <ReportsList onOpen={r=>goEditor(r.id)} onNew={goNew} onOpenClient={r=>goClient(r.id)} />;
   } else if (routeLoading) {
     body = <div style={{color:"var(--muted)",fontSize:14}}>Loading…</div>;
@@ -117,13 +195,19 @@ export default function App() {
     }
   } else if (route.name === "client" && routeData) {
     body = <ClientReport key={route.id} report={routeData} onBack={goList} />;
+  } else {
+    body = <ReportsList onOpen={r=>goEditor(r.id)} onNew={goNew} onOpenClient={r=>goClient(r.id)} />;
   }
+
+  const isWideRoute = route.name === "list" || route.name === "fs-tasks"
+    || route.name === "fs-settings" || route.name === "fs-testers" || route.name === "fs-my-tasks";
 
   return (
     <div>
       <style>{FONTS}{css}</style>
-      <Header email={session.user.email} onSignOut={() => supabase.auth.signOut()} />
-      <div style={{maxWidth: route.name==="list" ? 900 : 820, margin:"0 auto", padding:"40px 20px 80px"}}>
+      <Header email={session.user.email} roleLabel={ROLE_LABEL[profile.department]?.[profile.role]}
+        onSignOut={() => supabase.auth.signOut()} />
+      <div style={{maxWidth: isWideRoute ? 900 : 820, margin:"0 auto", padding:"40px 20px 80px"}}>
         {body}
       </div>
     </div>
