@@ -11,7 +11,7 @@ export default function TaskForm({ onDone, onCancel }) {
   const [groups, setGroups] = useState([]);
   const [testers, setTesters] = useState([]);
   const [groupId, setGroupId] = useState("");
-  const [testerId, setTesterId] = useState("");
+  const [assigneeIds, setAssigneeIds] = useState([]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -21,19 +21,23 @@ export default function TaskForm({ onDone, onCancel }) {
       setGroups(g);
       setTesters(activeTesters);
       if (g[0]) setGroupId(g[0].id);
-      if (activeTesters[0]) setTesterId(activeTesters[0].id);
+      if (activeTesters[0]) setAssigneeIds([activeTesters[0].id]);
     }).catch(e => setError(e.message));
   }, []);
+
+  const toggleAssignee = (id) => {
+    setAssigneeIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
 
   const submit = async (e) => {
     e.preventDefault();
     setError("");
     if (!name.trim()) return setError("Task name is required.");
     if (!groupId) return setError("Pick a checklist group.");
-    if (!testerId) return setError("Pick a tester to assign.");
+    if (assigneeIds.length === 0) return setError("Pick at least one tester to assign.");
     setSaving(true);
     try {
-      await createTask({ name: name.trim(), groupId, assignedTo: testerId });
+      await createTask({ name: name.trim(), groupId, assigneeIds });
       onDone();
     } catch (e) {
       setError(e.message);
@@ -59,11 +63,20 @@ export default function TaskForm({ onDone, onCancel }) {
             </select>
           </div>
           <div style={{marginBottom:8}}>
-            <Label required>Assign To Tester</Label>
-            <select value={testerId} onChange={e => setTesterId(e.target.value)} style={selectStyle}>
-              {testers.length===0 && <option value="">No testers yet — add one in Testers</option>}
-              {testers.map(t => <option key={t.id} value={t.id}>{t.email}</option>)}
-            </select>
+            <Label required>Assign To Tester(s)</Label>
+            {testers.length===0 && (
+              <div style={{color:"var(--muted)",fontSize:13}}>No testers yet — add one in Testers.</div>
+            )}
+            <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:220,overflowY:"auto"}}>
+              {testers.map(t => (
+                <label key={t.id} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",
+                  background:"var(--input-bg)",border:"1.5px solid var(--border)",borderRadius:8,padding:"10px 14px"}}>
+                  <input type="checkbox" checked={assigneeIds.includes(t.id)} onChange={() => toggleAssignee(t.id)}
+                    style={{width:16,height:16,cursor:"pointer",accentColor:"var(--accent)"}} />
+                  <span style={{fontSize:14}}>{t.email}</span>
+                </label>
+              ))}
+            </div>
           </div>
           <ErrorMsg msg={error} />
           <div style={{display:"flex",gap:10,marginTop:20}}>

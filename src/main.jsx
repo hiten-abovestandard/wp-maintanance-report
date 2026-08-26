@@ -47,6 +47,7 @@ function parseHash() {
   if (parts[0] === "fs") {
     if (parts[1] === "tasks") {
       if (parts[2] === "new") return { name: "fs-task-new" };
+      if (parts[2] === "trash") return { name: "fs-task-trash" };
       if (parts[2] && parts[3] === "report") return { name: "fs-task-report", id: parts[2] };
       return { name: "fs-tasks" };
     }
@@ -67,6 +68,7 @@ const fsNav = {
   goFsTasks: () => { location.hash = "#/fs/tasks"; },
   goFsTaskNew: () => { location.hash = "#/fs/tasks/new"; },
   goFsTaskReport: (id) => { location.hash = `#/fs/tasks/${id}/report`; },
+  goFsTaskTrash: () => { location.hash = "#/fs/tasks/trash"; },
   goFsSettings: () => { location.hash = "#/fs/settings"; },
   goFsTesters: () => { location.hash = "#/fs/testers"; },
   goFsMyTasks: () => { location.hash = "#/fs/my-tasks"; },
@@ -200,7 +202,8 @@ export default function App() {
   }
 
   const isWideRoute = route.name === "list" || route.name === "fs-tasks"
-    || route.name === "fs-settings" || route.name === "fs-testers" || route.name === "fs-my-tasks";
+    || route.name === "fs-settings" || route.name === "fs-testers" || route.name === "fs-my-tasks"
+    || route.name === "fs-task-trash";
 
   return (
     <div>

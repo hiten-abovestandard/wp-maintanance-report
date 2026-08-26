@@ -20,6 +20,18 @@ export const css = `
   body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
   h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
   code, .mono { font-family: 'DM Mono', monospace; }
+  button { transition: opacity .15s ease, border-color .15s ease, transform .1s ease; }
+  button:active { transform: scale(0.98); }
+  input, select, textarea { transition: border-color .15s ease; }
+  .row-card { transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease; }
+  .row-card:hover { border-color: var(--accent) !important; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+  select {
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 34px !important;
+  }
 `;
 
 export function uid() { return Math.random().toString(36).slice(2, 8); }
@@ -87,6 +99,42 @@ export function Card({ children, style={}, ...rest }) {
     <div style={{ background:"var(--card)", border:"1px solid var(--border)",
       borderRadius:12, padding:"20px 22px", ...style }} {...rest}>
       {children}
+    </div>
+  );
+}
+
+export function paginate(items, page, pageSize) {
+  if (pageSize === "all") return items;
+  const start = (page - 1) * pageSize;
+  return items.slice(start, start + pageSize);
+}
+
+const navBtnStyle = { background:"none", border:"1px solid var(--border)", borderRadius:8,
+  color:"var(--text)", padding:"6px 12px", fontSize:13, fontFamily:"'DM Mono',monospace" };
+
+export function Pagination({ page, pageSize, total, onPageChange, onPageSizeChange }) {
+  if (total === 0) return null;
+  const pageCount = pageSize === "all" ? 1 : Math.max(1, Math.ceil(total / pageSize));
+  return (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginTop:20,flexWrap:"wrap"}}>
+      <div style={{color:"var(--muted)",fontSize:12}}>{total} total</div>
+      <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <button onClick={() => onPageChange(Math.max(1, page - 1))} disabled={page <= 1}
+            style={{...navBtnStyle, opacity: page<=1 ? .4 : 1, cursor: page<=1 ? "default" : "pointer"}}>‹</button>
+          <span style={{fontSize:12,color:"var(--muted)",minWidth:70,textAlign:"center"}}>Page {page} / {pageCount}</span>
+          <button onClick={() => onPageChange(Math.min(pageCount, page + 1))} disabled={page >= pageCount}
+            style={{...navBtnStyle, opacity: page>=pageCount ? .4 : 1, cursor: page>=pageCount ? "default" : "pointer"}}>›</button>
+        </div>
+        <select value={pageSize} onChange={e => onPageSizeChange(e.target.value === "all" ? "all" : Number(e.target.value))}
+          style={{background:"var(--input-bg)",border:"1.5px solid var(--border)",borderRadius:8,
+            padding:"8px 14px",color:"var(--text)",fontSize:12,outline:"none",fontFamily:"'DM Sans',sans-serif"}}>
+          <option value={10}>10 / page</option>
+          <option value={30}>30 / page</option>
+          <option value={50}>50 / page</option>
+          <option value="all">All</option>
+        </select>
+      </div>
     </div>
   );
 }

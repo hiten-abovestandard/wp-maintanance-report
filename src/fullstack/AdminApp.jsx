@@ -2,6 +2,7 @@ import React from "react";
 import TaskList from "./TaskList";
 import TaskForm from "./TaskForm";
 import TaskReport from "./TaskReport";
+import TaskTrash from "./TaskTrash";
 import GlobalSettings from "./GlobalSettings";
 import Testers from "./Testers";
 
@@ -26,12 +27,14 @@ export default function AdminApp({ route, nav }) {
     body = <TaskForm onDone={nav.goFsTasks} onCancel={nav.goFsTasks} />;
   } else if (route.name === "fs-task-report" && route.id) {
     body = <TaskReport taskId={route.id} onBack={nav.goFsTasks} />;
+  } else if (route.name === "fs-task-trash") {
+    body = <TaskTrash onBack={nav.goFsTasks} />;
   } else if (route.name === "fs-settings") {
     body = <GlobalSettings />;
   } else if (route.name === "fs-testers") {
     body = <Testers />;
   } else {
-    body = <TaskList onNew={nav.goFsTaskNew} onOpenReport={nav.goFsTaskReport} />;
+    body = <TaskList onNew={nav.goFsTaskNew} onOpenReport={nav.goFsTaskReport} onOpenTrash={nav.goFsTaskTrash} />;
   }
 
   return (

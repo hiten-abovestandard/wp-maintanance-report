@@ -1,10 +1,26 @@
-import React, { useEffect, useState } from "react";
-import { Card, Input, Label, ErrorMsg, Tag } from "../ui";
+import React, { useEffect, useMemo, useState } from "react";
+import { Card, Input, Label, ErrorMsg, Tag, Pagination, paginate } from "../ui";
 import { listTesters, addTester, setTesterBlocked, removeTester } from "./fullstackApi";
 
 function randomPassword() {
   return Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6).toUpperCase();
 }
+
+const STATUS_FILTERS = [
+  { value: "all", label: "All testers" },
+  { value: "active", label: "Active" },
+  { value: "blocked", label: "Blocked" },
+];
+
+const SORTS = [
+  { value: "newest", label: "Newest first" },
+  { value: "oldest", label: "Oldest first" },
+  { value: "email", label: "Email (A–Z)" },
+];
+
+const selectStyle = { background:"var(--input-bg)", border:"1.5px solid var(--border)",
+  borderRadius:8, padding:"10px 14px", color:"var(--text)", fontSize:14,
+  outline:"none", fontFamily:"'DM Sans',sans-serif" };
 
 export default function Testers() {
   const [testers, setTesters] = useState([]);
@@ -14,6 +30,11 @@ export default function Testers() {
   const [password, setPassword] = useState(randomPassword());
   const [creating, setCreating] = useState(false);
   const [lastCreated, setLastCreated] = useState(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sort, setSort] = useState("newest");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const refresh = () => {
     setLoading(true);
@@ -49,6 +70,22 @@ export default function Testers() {
     try { await removeTester(t.id); refresh(); } catch (e) { setError(e.message); }
   };
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let list = testers.filter(t => {
+      if (statusFilter === "active" && t.blocked) return false;
+      if (statusFilter === "blocked" && !t.blocked) return false;
+      if (q && !t.email.toLowerCase().includes(q)) return false;
+      return true;
+    });
+    if (sort === "email") list = [...list].sort((a, b) => a.email.localeCompare(b.email));
+    else if (sort === "oldest") list = [...list].sort((a, b) => a.created_at.localeCompare(b.created_at));
+    return list;
+  }, [testers, search, statusFilter, sort]);
+
+  useEffect(() => { setPage(1); }, [search, statusFilter, sort, pageSize]);
+  const paged = paginate(filtered, page, pageSize);
+
   return (
     <div>
       <h1 style={{fontSize:"clamp(22px,4vw,32px)",fontWeight:800,marginBottom:24}}>Testers</h1>
@@ -81,13 +118,30 @@ export default function Testers() {
         )}
       </Card>
 
+      {testers.length > 0 && (
+        <div style={{display:"flex",gap:12,marginBottom:20,flexWrap:"wrap"}}>
+          <div style={{flex:"2 1 220px"}}>
+            <Input value={search} onChange={setSearch} placeholder="Search by email…" />
+          </div>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{...selectStyle, flex:"1 1 160px"}}>
+            {STATUS_FILTERS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
+          <select value={sort} onChange={e => setSort(e.target.value)} style={{...selectStyle, flex:"1 1 160px"}}>
+            {SORTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
+        </div>
+      )}
+
       {loading && <div style={{color:"var(--muted)",fontSize:14}}>Loading…</div>}
       {!loading && testers.length===0 && (
         <Card><div style={{color:"var(--muted)",fontSize:14}}>No testers yet.</div></Card>
       )}
+      {!loading && testers.length>0 && filtered.length===0 && (
+        <Card><div style={{color:"var(--muted)",fontSize:14}}>No testers match your search/filter.</div></Card>
+      )}
 
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        {testers.map(t => (
+        {paged.map(t => (
           <Card key={t.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
               <span>{t.email}</span>
@@ -107,6 +161,9 @@ export default function Testers() {
           </Card>
         ))}
       </div>
+
+      <Pagination page={page} pageSize={pageSize} total={filtered.length}
+        onPageChange={setPage} onPageSizeChange={setPageSize} />
     </div>
   );
 }

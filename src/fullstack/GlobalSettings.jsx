@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Card, Input, Label, ErrorMsg } from "../ui";
+import React, { useEffect, useMemo, useState } from "react";
+import { Card, Input, Label, ErrorMsg, Pagination, paginate } from "../ui";
 import {
   listGroups, createGroup, renameGroup, deleteGroup,
   listGroupItems, addChecklistItem, updateChecklistItem, deleteChecklistItem,
@@ -8,6 +8,15 @@ import {
 const itemInputStyle = { flex:1, background:"var(--input-bg)", border:"1.5px solid var(--border)",
   borderRadius:8, padding:"8px 12px", color:"var(--text)", fontSize:13, outline:"none",
   fontFamily:"'DM Sans',sans-serif" };
+
+const selectStyle = { background:"var(--input-bg)", border:"1.5px solid var(--border)",
+  borderRadius:8, padding:"10px 14px", color:"var(--text)", fontSize:14,
+  outline:"none", fontFamily:"'DM Sans',sans-serif" };
+
+const SORTS = [
+  { value: "newest", label: "Newest first" },
+  { value: "name", label: "Name (A–Z)" },
+];
 
 function GroupItems({ groupId }) {
   const [items, setItems] = useState([]);
@@ -74,6 +83,10 @@ export default function GlobalSettings() {
   const [newName, setNewName] = useState("");
   const [expanded, setExpanded] = useState(null);
   const [names, setNames] = useState({});
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("newest");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const refresh = () => {
     setLoading(true);
@@ -106,6 +119,15 @@ export default function GlobalSettings() {
     try { await deleteGroup(id); refresh(); } catch (e) { setError(e.message); }
   };
 
+  const filteredGroups = useMemo(() => {
+    let list = groups.filter(g => g.name.toLowerCase().includes(search.trim().toLowerCase()));
+    if (sort === "name") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    return list;
+  }, [groups, search, sort]);
+
+  useEffect(() => { setPage(1); }, [search, sort, pageSize]);
+  const pagedGroups = paginate(filteredGroups, page, pageSize);
+
   return (
     <div>
       <h1 style={{fontSize:"clamp(22px,4vw,32px)",fontWeight:800,marginBottom:24}}>Global Settings</h1>
@@ -124,13 +146,27 @@ export default function GlobalSettings() {
         <ErrorMsg msg={error} />
       </Card>
 
+      {groups.length > 0 && (
+        <div style={{display:"flex",gap:12,marginBottom:20,flexWrap:"wrap"}}>
+          <div style={{flex:"2 1 240px"}}>
+            <Input value={search} onChange={setSearch} placeholder="Search checklist groups…" />
+          </div>
+          <select value={sort} onChange={e => setSort(e.target.value)} style={{...selectStyle, flex:"1 1 160px"}}>
+            {SORTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
+        </div>
+      )}
+
       {loading && <div style={{color:"var(--muted)",fontSize:14}}>Loading…</div>}
       {!loading && groups.length===0 && (
         <Card><div style={{color:"var(--muted)",fontSize:14}}>No checklist groups yet.</div></Card>
       )}
+      {!loading && groups.length>0 && filteredGroups.length===0 && (
+        <Card><div style={{color:"var(--muted)",fontSize:14}}>No checklist groups match your search.</div></Card>
+      )}
 
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        {groups.map(g => (
+        {pagedGroups.map(g => (
           <Card key={g.id}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
               <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
@@ -157,6 +193,9 @@ export default function GlobalSettings() {
           </Card>
         ))}
       </div>
+
+      <Pagination page={page} pageSize={pageSize} total={filteredGroups.length}
+        onPageChange={setPage} onPageSizeChange={setPageSize} />
     </div>
   );
 }
