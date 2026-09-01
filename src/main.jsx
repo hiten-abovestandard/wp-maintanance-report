@@ -97,14 +97,22 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
+  // Supabase silently refreshes the access token on a timer and whenever the
+  // tab regains focus, which hands us a new `session` object for the same
+  // user each time. Keying these effects off `userId` (stable across a
+  // refresh) instead of the whole `session` object stops that from
+  // re-triggering profile/report refetches and blanking the UI on every
+  // tab switch.
+  const userId = session?.user?.id;
+
   useEffect(() => {
-    if (!session) { setProfile(undefined); return; }
+    if (!userId) { setProfile(undefined); return; }
     setProfile(undefined);
     setProfileError("");
-    getProfile(session.user.id)
+    getProfile(userId)
       .then(setProfile)
       .catch(e => { setProfileError(e.message); setProfile(null); });
-  }, [session]);
+  }, [userId]);
 
   useEffect(() => {
     if (!profile) return;
@@ -114,7 +122,7 @@ export default function App() {
   }, [profile, route.name]);
 
   useEffect(() => {
-    if (!session || profile?.department !== "wordpress") return;
+    if (!userId || profile?.department !== "wordpress") return;
     if ((route.name === "editor" || route.name === "client") && route.id) {
       setRouteLoading(true);
       setRouteError("");
@@ -125,7 +133,7 @@ export default function App() {
     } else {
       setRouteData(null);
     }
-  }, [route.name, route.id, session, profile]);
+  }, [route.name, route.id, userId, profile]);
 
   const onIdAssigned = (id) => {
     history.replaceState(null, "", `${location.pathname}${location.search}#/report/${id}`);
