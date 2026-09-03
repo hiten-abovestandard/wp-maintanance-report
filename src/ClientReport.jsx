@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Card, Tag } from "./ui";
+import { Card, Tag, ErrorMsg } from "./ui";
 import { buildClientReportBody } from "./clientReportTemplate";
 import { saveClientReport } from "./reportsApi";
+import { draftClientNote } from "./aiApi";
 import { useAutosave } from "./useAutosave";
 
 export default function ClientReport({ report, onBack }) {
@@ -11,9 +12,24 @@ export default function ClientReport({ report, onBack }) {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [drafting, setDrafting] = useState(false);
+  const [draftError, setDraftError] = useState("");
 
   const body = buildClientReportBody(report.data, report.report_date);
   const finalized = report.status === "final";
+
+  const draftWithAI = async () => {
+    if (topNote.trim() && !confirm("Replace your current note with an AI draft?")) return;
+    setDrafting(true);
+    setDraftError("");
+    try {
+      setTopNote(await draftClientNote(body));
+    } catch (e) {
+      setDraftError(e.message || "Couldn't generate a draft. Try again.");
+    } finally {
+      setDrafting(false);
+    }
+  };
 
   const persist = async (nextStatus) => {
     setSaving(true);
@@ -83,19 +99,28 @@ export default function ClientReport({ report, onBack }) {
       )}
 
       <Card style={{marginBottom:16}}>
-        <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",
-          color:"var(--muted)",marginBottom:8}}>Add before the summary (optional)</div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:8}}>
+          <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",
+            color:"var(--muted)"}}>Add before the summary (optional)</div>
+          <button onClick={draftWithAI} disabled={drafting}
+            style={{background:"none",border:"1px solid var(--border)",borderRadius:8,
+              color:"var(--muted)",cursor: drafting ? "default" : "pointer",padding:"5px 12px",fontSize:12,
+              fontFamily:"'DM Sans',sans-serif",opacity: drafting ? .6 : 1,flexShrink:0}}>
+            {drafting ? "Drafting…" : "✨ Draft with AI"}
+          </button>
+        </div>
         <textarea value={topNote} onChange={e=>setTopNote(e.target.value)}
           placeholder="e.g. Hi [Client name], hope you're doing well! Here's this month's update:"
           rows={3}
           style={{ width:"100%", background:"var(--input-bg)", border:"1.5px solid var(--border)",
             borderRadius:8, padding:"10px 14px", color:"var(--text)", fontSize:14,
             outline:"none", resize:"vertical", fontFamily:"'DM Sans',sans-serif" }} />
+        <ErrorMsg msg={draftError} />
       </Card>
 
       <Card style={{marginBottom:16,position:"relative"}}>
         <div style={{position:"absolute",top:0,left:0,right:0,height:3,
-          background:"linear-gradient(90deg,var(--accent),var(--accent2))",borderRadius:"12px 12px 0 0"}} />
+          background:"linear-gradient(90deg,var(--accent-solid),var(--accent2-solid))",borderRadius:"12px 12px 0 0"}} />
         <pre style={{ fontFamily:"'DM Mono',monospace", fontSize:13, lineHeight:1.7,
           color:"var(--text)", whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
           {body}
@@ -124,8 +149,8 @@ export default function ClientReport({ report, onBack }) {
         <button onClick={copy} disabled={saving || !finalized}
           title={!finalized ? "Finalize the report before copying" : undefined}
           style={{ flex:"2 1 260px", padding:"15px",
-            background: !finalized ? "var(--border)" : copied ? "var(--accent)" : "linear-gradient(135deg,var(--accent),var(--accent2))",
-            border:"none", borderRadius:10, color: !finalized ? "var(--muted)" : "#000", fontWeight:800,
+            background: !finalized ? "var(--border)" : copied ? "var(--accent-solid)" : "linear-gradient(135deg,var(--accent-solid),var(--accent2-solid))",
+            border:"none", borderRadius:10, color: !finalized ? "var(--muted)" : "var(--on-solid)", fontWeight:800,
             fontSize:15, cursor: (saving || !finalized) ? "default" : "pointer", fontFamily:"'Syne',sans-serif",
             letterSpacing:"0.05em", textTransform:"uppercase" }}>
           {copied ? "✓ Copied!" : "⎘ Copy Client Report"}
