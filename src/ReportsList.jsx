@@ -7,6 +7,20 @@ function monthLabel(isoDate) {
   return d.toLocaleString("default", { month: "long", year: "numeric" });
 }
 
+function currentMonthLabel() {
+  return new Date().toLocaleString("default", { month: "long", year: "numeric" });
+}
+
+function siteTitle(url) {
+  if (!url) return "";
+  try {
+    const u = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`);
+    return u.hostname.replace(/^www\./i, "");
+  } catch {
+    return url;
+  }
+}
+
 function groupByMonth(reports) {
   const groups = [];
   let current = null;
@@ -26,9 +40,9 @@ function reportLink(id) {
 }
 
 const CLIENT_STATUS = {
-  not_started: { label: "Get Client Report", color: "var(--danger)" },
-  draft: { label: "Client Report: Draft", color: "var(--warn)" },
-  sent: { label: "Client Report: Sent", color: "var(--accent)" },
+  not_started: { label: "Get Client Report", color: "var(--danger-solid)" },
+  draft: { label: "Client Report: Draft", color: "var(--warn-solid)" },
+  sent: { label: "Client Report: Sent", color: "var(--accent-solid)" },
 };
 
 export default function ReportsList({ onOpen, onNew, onOpenClient }) {
@@ -36,7 +50,7 @@ export default function ReportsList({ onOpen, onNew, onOpenClient }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [monthFilter, setMonthFilter] = useState("all");
+  const [monthFilter, setMonthFilter] = useState(currentMonthLabel());
   const [copiedId, setCopiedId] = useState(null);
 
   const refresh = () => {
@@ -70,6 +84,8 @@ export default function ReportsList({ onOpen, onNew, onOpenClient }) {
       const label = monthLabel(r.report_date);
       if (!seen.has(label)) seen.set(label, r.report_date);
     }
+    const curLabel = currentMonthLabel();
+    if (!seen.has(curLabel)) seen.set(curLabel, new Date().toISOString().slice(0, 10));
     return [...seen.entries()].sort((a, b) => b[1].localeCompare(a[1])).map(([label]) => label);
   }, [reports]);
 
@@ -106,8 +122,8 @@ export default function ReportsList({ onOpen, onNew, onOpenClient }) {
           <h1 style={{fontSize:"clamp(22px,4vw,32px)",fontWeight:800}}>Reports</h1>
         </div>
         <button onClick={onNew}
-          style={{ padding:"12px 22px", background:"linear-gradient(135deg,var(--accent),var(--accent2))",
-            border:"none", borderRadius:10, color:"#000", fontWeight:800,
+          style={{ padding:"12px 22px", background:"linear-gradient(135deg,var(--accent-solid),var(--accent2-solid))",
+            border:"none", borderRadius:10, color:"var(--on-solid)", fontWeight:800,
             fontSize:14, cursor:"pointer", fontFamily:"'Syne',sans-serif",
             letterSpacing:"0.03em" }}>
           + New Report
@@ -131,7 +147,11 @@ export default function ReportsList({ onOpen, onNew, onOpenClient }) {
       {error && <div style={{color:"var(--danger)",fontSize:14}}>{error}</div>}
       {!loading && !error && groups.length===0 && (
         <Card><div style={{color:"var(--muted)",fontSize:14}}>
-          {reports.length===0 ? `No reports yet. Start with "+ New Report".` : "No reports match your search/filter."}
+          {reports.length===0
+            ? `No reports yet. Start with "+ New Report".`
+            : (monthFilter !== "all" && !search.trim())
+              ? `No reports for ${monthFilter}. Select "All months" above to see all reports.`
+              : "No reports match your search/filter."}
         </div></Card>
       )}
 
@@ -145,25 +165,33 @@ export default function ReportsList({ onOpen, onNew, onOpenClient }) {
               const pending = (r.data.pendingPlugins||[]).filter(p=>p.name?.trim()).length;
               const clientStatus = CLIENT_STATUS[r.client_report_status || "not_started"];
               return (
-                <Card key={r.id} style={{cursor:"pointer",display:"flex",alignItems:"center",
-                  justifyContent:"space-between",gap:16,flexWrap:"wrap"}}
+                <Card key={r.id} style={{cursor:"pointer",display:"flex",
+                  flexDirection:"column",alignItems:"stretch",gap:12}}
                   onClick={()=>onOpen(r)}>
-                  <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
-                    <span style={{fontFamily:"'DM Mono',monospace",fontSize:14}}>{r.report_date}</span>
-                    <Tag color={r.status==="final" ? "var(--accent2)" : "var(--warn)"}>
-                      {r.status==="final" ? "Final" : "Draft"}
-                    </Tag>
-                    {r.data.stagingUrl && (
-                      <span style={{color:"var(--muted)",fontSize:13}}>{r.data.stagingUrl}</span>
-                    )}
-                    <span style={{color:"var(--muted)",fontSize:12}}>
-                      {updated} updated{pending ? `, ${pending} pending` : ""}
-                    </span>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:14,flexWrap:"wrap"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",minWidth:0}}>
+                      <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15}}>
+                        {siteTitle(r.data.stagingUrl) || "Untitled"}
+                      </span>
+                      {r.data.stagingUrl && (
+                        <span style={{color:"var(--muted)",fontSize:13,overflow:"hidden",
+                          textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"100%"}}>{r.data.stagingUrl}</span>
+                      )}
+                      <span style={{color:"var(--muted)",fontSize:12}}>
+                        {updated} updated{pending ? `, ${pending} pending` : ""}
+                      </span>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+                      <span style={{fontFamily:"'DM Mono',monospace",fontSize:13,color:"var(--muted)"}}>{r.report_date}</span>
+                      <Tag color={r.status==="final" ? "var(--accent2)" : "var(--warn)"}>
+                        {r.status==="final" ? "Final" : "Draft"}
+                      </Tag>
+                    </div>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
                     <button onClick={(e)=>{ e.stopPropagation(); onOpenClient(r); }}
                       style={{background:clientStatus.color, border:"none", borderRadius:8,
-                        color:"#000", cursor:"pointer", padding:"7px 14px", fontSize:12, fontWeight:700,
+                        color:"var(--on-solid)", cursor:"pointer", padding:"7px 14px", fontSize:12, fontWeight:700,
                         fontFamily:"'Syne',sans-serif", letterSpacing:"0.02em"}}>
                       {clientStatus.label}
                     </button>

@@ -17,10 +17,21 @@ const ROLE_LABEL = {
   fullstack: { admin: "Full-Stack Admin", tester: "Full-Stack Tester" },
 };
 
-function Header({ email, roleLabel, onSignOut }) {
+function ThemeToggle({ theme, onToggle }) {
+  return (
+    <button onClick={onToggle} title={theme==="light" ? "Switch to dark mode" : "Switch to light mode"}
+      style={{background:"none",border:"1px solid var(--border)",borderRadius:8,
+        color:"var(--text)",cursor:"pointer",padding:"6px 10px",fontSize:14,lineHeight:1}}>
+      {theme==="light" ? "🌙" : "☀️"}
+    </button>
+  );
+}
+
+function Header({ email, roleLabel, onSignOut, theme, onToggleTheme }) {
   return (
     <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:12,
       padding:"14px 20px",borderBottom:"1px solid var(--border)"}}>
+      <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       {roleLabel && (
         <span style={{fontSize:11,letterSpacing:"0.06em",textTransform:"uppercase",
           color:"var(--accent)",fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{roleLabel}</span>
@@ -84,6 +95,14 @@ export default function App() {
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeError, setRouteError] = useState("");
   const [preview, setPreview] = useState(null); // { data } shown as an overlay on top of the editor
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => t === "dark" ? "light" : "dark");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -217,7 +236,7 @@ export default function App() {
     <div>
       <style>{FONTS}{css}</style>
       <Header email={session.user.email} roleLabel={ROLE_LABEL[profile.department]?.[profile.role]}
-        onSignOut={() => supabase.auth.signOut()} />
+        onSignOut={() => supabase.auth.signOut()} theme={theme} onToggleTheme={toggleTheme} />
       <div style={{maxWidth: isWideRoute ? 900 : 820, margin:"0 auto", padding:"40px 20px 80px"}}>
         {body}
       </div>

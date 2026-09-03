@@ -100,8 +100,8 @@ export default function Testers() {
             <Input value={password} onChange={setPassword} placeholder="Temp password" />
           </div>
           <button type="submit" disabled={creating}
-            style={{ padding:"0 20px", background:"linear-gradient(135deg,var(--accent),var(--accent2))",
-              border:"none", borderRadius:8, color:"#000", fontWeight:800, fontSize:13,
+            style={{ padding:"0 20px", background:"linear-gradient(135deg,var(--accent-solid),var(--accent2-solid))",
+              border:"none", borderRadius:8, color:"var(--on-solid)", fontWeight:800, fontSize:13,
               cursor: creating?"default":"pointer", fontFamily:"'Syne',sans-serif", opacity: creating?.6:1 }}>
             {creating ? "Adding…" : "+ Add Tester"}
           </button>

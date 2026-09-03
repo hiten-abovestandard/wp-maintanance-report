@@ -137,8 +137,8 @@ export default function GlobalSettings() {
         <form onSubmit={create} style={{display:"flex",gap:8,marginTop:6}}>
           <Input value={newName} onChange={setNewName} placeholder="e.g. Deployment Checklist" />
           <button type="submit"
-            style={{ padding:"0 20px", background:"linear-gradient(135deg,var(--accent),var(--accent2))",
-              border:"none", borderRadius:8, color:"#000", fontWeight:800, fontSize:13,
+            style={{ padding:"0 20px", background:"linear-gradient(135deg,var(--accent-solid),var(--accent2-solid))",
+              border:"none", borderRadius:8, color:"var(--on-solid)", fontWeight:800, fontSize:13,
               cursor:"pointer", fontFamily:"'Syne',sans-serif" }}>
             + Add Group
           </button>

@@ -21,8 +21,8 @@ export default function ReportPreview({ task }) {
           {generatedAt.toLocaleDateString()} · {meta.label} · {assigneeEmails(task)}
         </div>
         <button onClick={copy}
-          style={{background: copied ? "var(--accent)" : "none", border:"1px solid var(--border)", borderRadius:8,
-            color: copied ? "#000" : "var(--muted)", cursor:"pointer", padding:"8px 16px", fontSize:12, fontWeight:700}}>
+          style={{background: copied ? "var(--accent-solid)" : "none", border:"1px solid var(--border)", borderRadius:8,
+            color: copied ? "var(--on-solid)" : "var(--muted)", cursor:"pointer", padding:"8px 16px", fontSize:12, fontWeight:700}}>
           {copied ? "✓ Copied" : "Copy Report"}
         </button>
       </div>

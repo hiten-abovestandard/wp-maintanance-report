@@ -254,10 +254,10 @@ export default function ReportEditor({ report, onClose, onPreview, onIdAssigned 
           Save & Close
         </button>
         <button onClick={generate} disabled={saving}
-          style={{ flex:"2 1 260px", padding:"15px", background:"linear-gradient(135deg,var(--accent),var(--accent2))",
-            border:"none", borderRadius:10, color:"#000", fontWeight:800,
+          style={{ flex:"2 1 260px", padding:"15px", background:"linear-gradient(135deg,var(--accent-solid),var(--accent2-solid))",
+            border:"none", borderRadius:10, color:"var(--on-solid)", fontWeight:800,
             fontSize:15, cursor: saving ? "default" : "pointer", fontFamily:"'Syne',sans-serif",
-            letterSpacing:"0.05em", textTransform:"uppercase", boxShadow:"0 4px 24px var(--accent)33",
+            letterSpacing:"0.05em", textTransform:"uppercase", boxShadow:"0 4px 24px var(--accent-solid)33",
             opacity: saving ? .6 : 1 }}>
           Generate Report →
         </button>

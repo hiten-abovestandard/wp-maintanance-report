@@ -35,8 +35,8 @@ export default function Login() {
           </div>
           <ErrorMsg msg={error} />
           <button type="submit" disabled={loading}
-            style={{ width:"100%", marginTop:16, padding:"13px", background:"linear-gradient(135deg,var(--accent),var(--accent2))",
-              border:"none", borderRadius:10, color:"#000", fontWeight:800,
+            style={{ width:"100%", marginTop:16, padding:"13px", background:"linear-gradient(135deg,var(--accent-solid),var(--accent2-solid))",
+              border:"none", borderRadius:10, color:"var(--on-solid)", fontWeight:800,
               fontSize:14, cursor: loading ? "default" : "pointer", fontFamily:"'Syne',sans-serif",
               letterSpacing:"0.05em", textTransform:"uppercase", opacity: loading ? .6 : 1 }}>
             {loading ? "Signing In…" : "Sign In"}

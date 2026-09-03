@@ -16,7 +16,31 @@ export const css = `
     --text: #e8eaf0;
     --muted: #6b7280;
     --input-bg: #0f1119;
+    --accent-solid: #4fffb0;
+    --accent2-solid: #7c6dfa;
+    --danger-solid: #ff5f6d;
+    --warn-solid: #ffc744;
+    --on-solid: #000000;
   }
+  :root[data-theme="light"] {
+    --bg: #f5f6fa;
+    --surface: #ffffff;
+    --card: #ffffff;
+    --border: #e1e3ea;
+    --accent: #1a9c68;
+    --accent2: #6552d8;
+    --danger: #d92d3f;
+    --warn: #a9720a;
+    --text: #14161c;
+    --muted: #656b78;
+    --input-bg: #ffffff;
+    --accent-solid: #0d9488;
+    --accent2-solid: #4338ca;
+    --danger-solid: #dc2626;
+    --warn-solid: #d97706;
+    --on-solid: #ffffff;
+  }
+  body { transition: background-color .15s ease, color .15s ease; }
   body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
   h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
   code, .mono { font-family: 'DM Mono', monospace; }

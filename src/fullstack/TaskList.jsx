@@ -70,8 +70,8 @@ export default function TaskList({ onNew, onOpenReport, onOpenTrash }) {
             Trash
           </button>
           <button onClick={onNew}
-            style={{ padding:"12px 22px", background:"linear-gradient(135deg,var(--accent),var(--accent2))",
-              border:"none", borderRadius:10, color:"#000", fontWeight:800,
+            style={{ padding:"12px 22px", background:"linear-gradient(135deg,var(--accent-solid),var(--accent2-solid))",
+              border:"none", borderRadius:10, color:"var(--on-solid)", fontWeight:800,
               fontSize:14, cursor:"pointer", fontFamily:"'Syne',sans-serif", letterSpacing:"0.03em" }}>
             + New Task
           </button>

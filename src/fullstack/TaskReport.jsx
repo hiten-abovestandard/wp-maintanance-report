@@ -133,18 +133,18 @@ export default function TaskReport({ taskId, onBack }) {
           <div style={{display:"flex",border:"1px solid var(--border)",borderRadius:8,overflow:"hidden"}}>
             <button onClick={() => setMode("view")}
               style={{padding:"8px 16px",fontSize:12,fontWeight:700,border:"none",cursor:"pointer",
-                background: mode==="view" ? "var(--accent)" : "none", color: mode==="view" ? "#000" : "var(--muted)"}}>
+                background: mode==="view" ? "var(--accent-solid)" : "none", color: mode==="view" ? "var(--on-solid)" : "var(--muted)"}}>
               View
             </button>
             <button onClick={() => setMode("edit")}
               style={{padding:"8px 16px",fontSize:12,fontWeight:700,border:"none",cursor:"pointer",
-                background: mode==="edit" ? "var(--accent)" : "none", color: mode==="edit" ? "#000" : "var(--muted)"}}>
+                background: mode==="edit" ? "var(--accent-solid)" : "none", color: mode==="edit" ? "var(--on-solid)" : "var(--muted)"}}>
               Edit
             </button>
           </div>
           <button onClick={() => setShowAssignees(s => !s)}
-            style={{background: showAssignees ? "var(--accent)" : "none",border:"1px solid var(--border)",borderRadius:8,
-              color: showAssignees ? "#000" : "var(--text)",cursor:"pointer",padding:"8px 16px",fontSize:12,fontWeight:700}}>
+            style={{background: showAssignees ? "var(--accent-solid)" : "none",border:"1px solid var(--border)",borderRadius:8,
+              color: showAssignees ? "var(--on-solid)" : "var(--text)",cursor:"pointer",padding:"8px 16px",fontSize:12,fontWeight:700}}>
             Manage Testers
           </button>
           <button onClick={moveToTrash} disabled={trashing}

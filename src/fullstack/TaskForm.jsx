@@ -81,8 +81,8 @@ export default function TaskForm({ onDone, onCancel }) {
           <ErrorMsg msg={error} />
           <div style={{display:"flex",gap:10,marginTop:20}}>
             <button type="submit" disabled={saving}
-              style={{ padding:"12px 22px", background:"linear-gradient(135deg,var(--accent),var(--accent2))",
-                border:"none", borderRadius:10, color:"#000", fontWeight:800,
+              style={{ padding:"12px 22px", background:"linear-gradient(135deg,var(--accent-solid),var(--accent2-solid))",
+                border:"none", borderRadius:10, color:"var(--on-solid)", fontWeight:800,
                 fontSize:14, cursor: saving ? "default":"pointer", fontFamily:"'Syne',sans-serif",
                 letterSpacing:"0.03em", opacity: saving?.6:1 }}>
               {saving ? "Creating…" : "Create Task"}

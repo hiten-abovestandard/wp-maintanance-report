@@ -75,15 +75,15 @@ export default function ReportView({ data, onBack }) {
           ← Back to Editor
         </button>
         <button onClick={copy} style={{display:"flex",alignItems:"center",gap:6,
-          background: copied?"var(--accent)":"var(--accent2)",border:"none",borderRadius:8,
-          color: copied?"#000":"#fff",cursor:"pointer",padding:"9px 20px",
+          background: copied?"var(--accent-solid)":"var(--accent2-solid)",border:"none",borderRadius:8,
+          color:"var(--on-solid)",cursor:"pointer",padding:"9px 20px",
           fontSize:13,fontWeight:600,fontFamily:"'Syne',sans-serif",transition:"all .2s"}}>
           {copied ? "✓ Copied!" : "⎘ Copy Report"}
         </button>
       </div>
       <Card style={{position:"relative"}}>
         <div style={{position:"absolute",top:0,left:0,right:0,height:3,
-          background:"linear-gradient(90deg,var(--accent),var(--accent2))",borderRadius:"12px 12px 0 0"}} />
+          background:"linear-gradient(90deg,var(--accent-solid),var(--accent2-solid))",borderRadius:"12px 12px 0 0"}} />
         <pre style={{ fontFamily:"'DM Mono',monospace", fontSize:13, lineHeight:1.7,
           color:"var(--text)", whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
           {text}

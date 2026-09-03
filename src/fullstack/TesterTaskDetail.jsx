@@ -101,8 +101,8 @@ export default function TesterTaskDetail({ taskId, onBack }) {
       {!task.submitted_at && (
         allChecked ? (
           <button onClick={submit} disabled={submitting}
-            style={{ padding:"13px 26px", background:"linear-gradient(135deg,var(--accent),var(--accent2))",
-              border:"none", borderRadius:10, color:"#000", fontWeight:800,
+            style={{ padding:"13px 26px", background:"linear-gradient(135deg,var(--accent-solid),var(--accent2-solid))",
+              border:"none", borderRadius:10, color:"var(--on-solid)", fontWeight:800,
               fontSize:14, cursor: submitting?"default":"pointer", fontFamily:"'Syne',sans-serif",
               letterSpacing:"0.03em", opacity: submitting?.6:1 }}>
             {submitting ? "Submitting…" : "Submit"}
