@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Card, Tag, ErrorMsg } from "./ui";
+import { Card, Tag, ErrorMsg, RewriteBox, Modal, Label } from "./ui";
 import { buildClientReportBody } from "./clientReportTemplate";
 import { saveClientReport } from "./reportsApi";
-import { draftClientNote } from "./aiApi";
+import { draftClientNote, generateText } from "./aiApi";
+import { useRewrite } from "./useRewrite";
 import { useAutosave } from "./useAutosave";
 
 export default function ClientReport({ report, onBack }) {
@@ -17,6 +18,38 @@ export default function ClientReport({ report, onBack }) {
 
   const body = buildClientReportBody(report.data, report.report_date);
   const finalized = report.status === "final";
+
+  const topNoteRewrite = useRewrite(topNote, setTopNote);
+  const bottomNoteRewrite = useRewrite(bottomNote, setBottomNote);
+
+  const [showGenerator, setShowGenerator] = useState(false);
+  const [genPrompt, setGenPrompt] = useState("");
+  const [genResult, setGenResult] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState("");
+  const [genCopied, setGenCopied] = useState(false);
+
+  const openGenerator = () => {
+    setGenPrompt(""); setGenResult(""); setGenError(""); setGenCopied(false);
+    setShowGenerator(true);
+  };
+
+  const generateAndCopy = async () => {
+    if (!genPrompt.trim()) return;
+    setGenerating(true);
+    setGenError("");
+    setGenCopied(false);
+    try {
+      const text = await generateText(genPrompt);
+      setGenResult(text);
+      await navigator.clipboard.writeText(text);
+      setGenCopied(true);
+    } catch (e) {
+      setGenError(e.message || "Couldn't generate text. Try again.");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const draftWithAI = async () => {
     if (topNote.trim() && !confirm("Replace your current note with an AI draft?")) return;
@@ -83,12 +116,52 @@ export default function ClientReport({ report, onBack }) {
         </div>
       </div>
 
-      <div style={{marginBottom:24}}>
-        <h1 style={{fontSize:"clamp(20px,3vw,28px)",fontWeight:800}}>Client Report</h1>
-        <div style={{color:"var(--muted)",fontSize:13,marginTop:4}}>
-          {report.report_date} · edit the notes below, the middle section is generated automatically
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,marginBottom:24}}>
+        <div>
+          <h1 style={{fontSize:"clamp(20px,3vw,28px)",fontWeight:800}}>Client Report</h1>
+          <div style={{color:"var(--muted)",fontSize:13,marginTop:4}}>
+            {report.report_date} · edit the notes below, the middle section is generated automatically
+          </div>
         </div>
+        <button onClick={openGenerator} title="Generate custom text with AI"
+          style={{background:"none",border:"1px solid var(--border)",borderRadius:8,
+            color:"var(--muted)",cursor:"pointer",padding:"8px 11px",fontSize:16,lineHeight:1,flexShrink:0}}>
+          ✏️
+        </button>
       </div>
+
+      {showGenerator && (
+        <Modal title="Generate custom text" onClose={()=>setShowGenerator(false)}>
+          <Label>What do you want to write?</Label>
+          <textarea value={genPrompt} onChange={e=>setGenPrompt(e.target.value)}
+            placeholder="e.g. Write a short note apologizing for last week's downtime and reassuring the client it's resolved"
+            rows={3}
+            style={{ width:"100%", background:"var(--input-bg)", border:"1.5px solid var(--border)",
+              borderRadius:8, padding:"10px 14px", color:"var(--text)", fontSize:14,
+              outline:"none", resize:"vertical", fontFamily:"'DM Sans',sans-serif", marginBottom:12 }} />
+          <button onClick={generateAndCopy} disabled={!genPrompt.trim() || generating}
+            style={{width:"100%",padding:"12px",
+              background:"linear-gradient(135deg,var(--accent-solid),var(--accent2-solid))",
+              border:"none",borderRadius:10,color:"var(--on-solid)",fontWeight:800,fontSize:14,
+              cursor: (!genPrompt.trim() || generating) ? "default" : "pointer",
+              fontFamily:"'Syne',sans-serif",letterSpacing:"0.03em",
+              opacity: (!genPrompt.trim() || generating) ? .6 : 1}}>
+            {generating ? "Generating…" : "Generate"}
+          </button>
+          <ErrorMsg msg={genError} />
+          {genResult && (
+            <div style={{marginTop:14,border:"1px solid var(--accent2)",borderRadius:10,padding:14}}>
+              <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",
+                color:"var(--accent2)",marginBottom:8}}>
+                {genCopied ? "✓ Copied to clipboard" : "Result"}
+              </div>
+              <div style={{fontSize:14,color:"var(--text)",lineHeight:1.6,whiteSpace:"pre-wrap"}}>
+                {genResult}
+              </div>
+            </div>
+          )}
+        </Modal>
+      )}
 
       {!finalized && (
         <div style={{background:"#ffc74411",border:"1px solid var(--warn)",borderRadius:10,
@@ -99,22 +172,18 @@ export default function ClientReport({ report, onBack }) {
       )}
 
       <Card style={{marginBottom:16}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:8}}>
-          <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",
-            color:"var(--muted)"}}>Add before the summary (optional)</div>
-          <button onClick={draftWithAI} disabled={drafting}
-            style={{background:"none",border:"1px solid var(--border)",borderRadius:8,
-              color:"var(--muted)",cursor: drafting ? "default" : "pointer",padding:"5px 12px",fontSize:12,
-              fontFamily:"'DM Sans',sans-serif",opacity: drafting ? .6 : 1,flexShrink:0}}>
-            {drafting ? "Drafting…" : "✨ Draft with AI"}
-          </button>
-        </div>
-        <textarea value={topNote} onChange={e=>setTopNote(e.target.value)}
+        <RewriteBox label="Add before the summary (optional)"
+          value={topNote} onChange={setTopNote} rewrite={topNoteRewrite}
           placeholder="e.g. Hi [Client name], hope you're doing well! Here's this month's update:"
-          rows={3}
-          style={{ width:"100%", background:"var(--input-bg)", border:"1.5px solid var(--border)",
-            borderRadius:8, padding:"10px 14px", color:"var(--text)", fontSize:14,
-            outline:"none", resize:"vertical", fontFamily:"'DM Sans',sans-serif" }} />
+          extraButton={
+            <button onClick={draftWithAI} disabled={drafting || topNoteRewrite.rewriting}
+              style={{background:"none",border:"1px solid var(--border)",borderRadius:8,
+                color:"var(--muted)",cursor: (drafting || topNoteRewrite.rewriting) ? "default" : "pointer",
+                padding:"5px 12px",fontSize:12,
+                fontFamily:"'DM Sans',sans-serif",opacity: (drafting || topNoteRewrite.rewriting) ? .6 : 1}}>
+              {drafting ? "Drafting…" : "✨ Draft with AI"}
+            </button>
+          } />
         <ErrorMsg msg={draftError} />
       </Card>
 
@@ -128,14 +197,9 @@ export default function ClientReport({ report, onBack }) {
       </Card>
 
       <Card style={{marginBottom:24}}>
-        <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",
-          color:"var(--muted)",marginBottom:8}}>Add after the summary (optional)</div>
-        <textarea value={bottomNote} onChange={e=>setBottomNote(e.target.value)}
-          placeholder="e.g. Let us know if you have any questions. Best, Support Team"
-          rows={3}
-          style={{ width:"100%", background:"var(--input-bg)", border:"1.5px solid var(--border)",
-            borderRadius:8, padding:"10px 14px", color:"var(--text)", fontSize:14,
-            outline:"none", resize:"vertical", fontFamily:"'DM Sans',sans-serif" }} />
+        <RewriteBox label="Add after the summary (optional)"
+          value={bottomNote} onChange={setBottomNote} rewrite={bottomNoteRewrite}
+          placeholder="e.g. Let us know if you have any questions. Best, Support Team" />
       </Card>
 
       <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>

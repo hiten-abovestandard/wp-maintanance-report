@@ -163,6 +163,26 @@ export function Pagination({ page, pageSize, total, onPageChange, onPageSizeChan
   );
 }
 
+export function Modal({ title, onClose, children }) {
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",display:"flex",
+      alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}
+      onClick={onClose}>
+      <div style={{background:"var(--card)",border:"1px solid var(--border)",borderRadius:14,
+        padding:24,maxWidth:520,width:"100%",maxHeight:"85vh",overflowY:"auto"}}
+        onClick={e=>e.stopPropagation()}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+          <h3 style={{fontSize:16,fontWeight:800,fontFamily:"'Syne',sans-serif"}}>{title}</h3>
+          <button onClick={onClose}
+            style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",
+              fontSize:22,lineHeight:1,padding:4}}>×</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function ErrorMsg({ msg }) {
   if (!msg) return null;
   return (
@@ -170,6 +190,63 @@ export function ErrorMsg({ msg }) {
       color:"var(--danger)", fontSize:12, fontWeight:500 }}>
       <span style={{fontSize:14}}>⚠</span> {msg}
     </div>
+  );
+}
+
+// rewrite: the object returned by useRewrite(value, onChange)
+export function RewriteBox({ label, value, onChange, rewrite, extraButton, placeholder, rows=3 }) {
+  const { canRewrite, rewriting, error, pending, run, accept, decline } = rewrite;
+  return (
+    <>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:6}}>
+        <Label>{pending ? "Original" : label}</Label>
+        {!pending && (
+          <div style={{display:"flex",gap:8,flexShrink:0}}>
+            {extraButton}
+            <button onClick={run} disabled={!canRewrite || rewriting}
+              title={!canRewrite ? "Write a few words first" : undefined}
+              style={{background:"none",border:"1px solid var(--border)",borderRadius:8,
+                color:"var(--muted)",cursor: (!canRewrite || rewriting) ? "default" : "pointer",
+                padding:"5px 12px",fontSize:12,fontFamily:"'DM Sans',sans-serif",
+                opacity: (!canRewrite || rewriting) ? .5 : 1}}>
+              {rewriting ? "Rewriting…" : "✨ Rewrite"}
+            </button>
+          </div>
+        )}
+      </div>
+      <textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows}
+        disabled={!!pending}
+        style={{ width:"100%", background:"var(--input-bg)", border:"1.5px solid var(--border)",
+          borderRadius:8, padding:"10px 14px", color:"var(--text)", fontSize:14,
+          outline:"none", resize:"vertical", fontFamily:"'DM Sans',sans-serif",
+          opacity: pending ? .55 : 1, cursor: pending ? "not-allowed" : "text" }}
+        onFocus={e=>e.target.style.borderColor="var(--muted)"}
+        onBlur={e=>e.target.style.borderColor="var(--border)"} />
+      <ErrorMsg msg={error} />
+      {pending && (
+        <div style={{marginTop:14,border:"1px solid var(--accent2)",borderRadius:10,padding:14}}>
+          <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",
+            color:"var(--accent2)",marginBottom:8}}>✨ AI Rewrite</div>
+          <div style={{fontSize:14,color:"var(--text)",lineHeight:1.6,whiteSpace:"pre-wrap",marginBottom:14}}>
+            {pending}
+          </div>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+            <button onClick={accept}
+              style={{background:"var(--accent-solid)",border:"none",borderRadius:8,
+                color:"var(--on-solid)",cursor:"pointer",padding:"8px 18px",fontSize:13,fontWeight:700,
+                fontFamily:"'Syne',sans-serif"}}>
+              ✓ Accept
+            </button>
+            <button onClick={decline}
+              style={{background:"none",border:"1px solid var(--border)",borderRadius:8,
+                color:"var(--muted)",cursor:"pointer",padding:"8px 18px",fontSize:13,fontWeight:600,
+                fontFamily:"'DM Sans',sans-serif"}}>
+              ✕ Decline
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

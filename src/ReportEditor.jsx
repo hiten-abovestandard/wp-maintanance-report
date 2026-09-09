@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Label, Input, Tag, Section, Card, ErrorMsg, DynamicList, uid, todayISO, isoToDMY } from "./ui";
+import { Label, Input, Tag, Section, Card, ErrorMsg, DynamicList, RewriteBox, uid, todayISO, isoToDMY } from "./ui";
 import { saveReport } from "./reportsApi";
+import { useRewrite } from "./useRewrite";
 import { useAutosave } from "./useAutosave";
 
 function blankFields() {
@@ -26,6 +27,8 @@ export default function ReportEditor({ report, onClose, onPreview, onIdAssigned 
   const [savedAt, setSavedAt] = useState(null);
 
   const setField = (key) => (val) => setFields(f => ({ ...f, [key]: val }));
+
+  const notesRewrite = useRewrite(fields.additionalNotes, setField("additionalNotes"));
 
   const validate = () => {
     const e = {};
@@ -213,17 +216,10 @@ export default function ReportEditor({ report, onClose, onPreview, onIdAssigned 
 
       <Card style={{marginBottom:32}}>
         <Section title="Additional Notes" accent="var(--muted)">
-          <Label>Extra details to include in the report</Label>
-          <textarea value={fields.additionalNotes} onChange={e=>setField("additionalNotes")(e.target.value)}
-            placeholder="Any additional observations, issues, or notes…"
-            rows={3}
-            style={{ width:"100%", background:"var(--input-bg)",
-              border:"1.5px solid var(--border)", borderRadius:8,
-              padding:"10px 14px", color:"var(--text)", fontSize:14,
-              outline:"none", resize:"vertical", fontFamily:"'DM Sans',sans-serif" }}
-            onFocus={e=>e.target.style.borderColor="var(--muted)"}
-            onBlur={e=>e.target.style.borderColor="var(--border)"}
-          />
+          <RewriteBox label="Extra details to include in the report"
+            value={fields.additionalNotes} onChange={setField("additionalNotes")}
+            rewrite={notesRewrite}
+            placeholder="Any additional observations, issues, or notes…" />
         </Section>
       </Card>
 
