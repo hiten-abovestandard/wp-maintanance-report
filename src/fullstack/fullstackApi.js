@@ -1,5 +1,5 @@
 import { supabase } from "../supabaseClient";
-import { createTesterAuthUser } from "./adminUserClient";
+import { createAuthUser } from "../adminUserClient";
 
 export async function getProfile(userId) {
   const { data, error } = await supabase
@@ -25,7 +25,7 @@ export async function listTesters() {
 }
 
 export async function addTester(email, password) {
-  const user = await createTesterAuthUser(email, password);
+  const user = await createAuthUser(email, password);
   const { data, error } = await supabase
     .from("profiles")
     .insert({ id: user.id, email, department: "fullstack", role: "tester" })

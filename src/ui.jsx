@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');`;
 
@@ -83,16 +83,29 @@ export function Label({ children, required }) {
   );
 }
 
-export function Input({ value, onChange, placeholder, style={}, ...rest }) {
+const PICKER_TYPES = ["date", "time", "datetime-local", "month", "week"];
+
+export function Input({ value, onChange, placeholder, style={}, error, type, ...rest }) {
+  const openPicker = (e) => {
+    if (PICKER_TYPES.includes(type) && typeof e.target.showPicker === "function") {
+      try { e.target.showPicker(); } catch { /* not user-gesture-triggered or unsupported; ignore */ }
+    }
+  };
   return (
-    <input value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
-      style={{ width:"100%", background:"var(--input-bg)", border:"1.5px solid var(--border)",
-        borderRadius:8, padding:"10px 14px", color:"var(--text)", fontSize:14,
-        outline:"none", transition:"border .2s", fontFamily:"'DM Sans',sans-serif", ...style }}
-      onFocus={e=>e.target.style.borderColor="var(--accent)"}
-      onBlur={e=>e.target.style.borderColor="var(--border)"}
-      {...rest}
-    />
+    <div>
+      <input value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} type={type}
+        style={{ width:"100%", background:"var(--input-bg)",
+          border: `1.5px solid ${error ? "var(--danger)" : "var(--border)"}`,
+          borderRadius:8, padding:"10px 14px", color:"var(--text)", fontSize:14,
+          outline:"none", transition:"border .2s", fontFamily:"'DM Sans',sans-serif",
+          cursor: PICKER_TYPES.includes(type) ? "pointer" : "text", ...style }}
+        onFocus={e=>{ if(!error) e.target.style.borderColor="var(--accent)"; }}
+        onBlur={e=>{ e.target.style.borderColor = error ? "var(--danger)" : "var(--border)"; }}
+        onClick={openPicker}
+        {...rest}
+      />
+      {error && <ErrorMsg msg={error} />}
+    </div>
   );
 }
 
@@ -159,6 +172,76 @@ export function Pagination({ page, pageSize, total, onPageChange, onPageSizeChan
           <option value="all">All</option>
         </select>
       </div>
+    </div>
+  );
+}
+
+// options: [{id, label}]; selected: [id]. A closed field that opens a
+// searchable checkbox popover on click, for picking one or many options
+// without navigating away.
+export function MultiSelect({ options, selected, onChange, placeholder="Select…" }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e) => { if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDocClick); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+
+  const toggle = (id) => {
+    onChange(selected.includes(id) ? selected.filter(s => s !== id) : [...selected, id]);
+  };
+  const remove = (id, e) => { e.stopPropagation(); onChange(selected.filter(s => s !== id)); };
+
+  const selectedOptions = options.filter(o => selected.includes(o.id));
+  const q = search.trim().toLowerCase();
+  const visible = q ? options.filter(o => o.label.toLowerCase().includes(q)) : options;
+
+  return (
+    <div ref={rootRef} style={{position:"relative"}}>
+      <div onClick={()=>setOpen(o=>!o)}
+        style={{ width:"100%", minHeight:44, background:"var(--input-bg)", border:"1.5px solid var(--border)",
+          borderRadius:8, padding:"8px 12px", cursor:"pointer", display:"flex", alignItems:"center",
+          flexWrap:"wrap", gap:6, boxSizing:"border-box" }}>
+        {selectedOptions.length === 0 && (
+          <span style={{color:"var(--muted)",fontSize:14}}>{placeholder}</span>
+        )}
+        {selectedOptions.map(o => (
+          <span key={o.id} style={{display:"flex",alignItems:"center",gap:6,background:"var(--accent2)22",
+            color:"var(--accent2)",borderRadius:20,padding:"3px 6px 3px 10px",fontSize:12,fontWeight:600}}>
+            {o.label}
+            <span onClick={(e)=>remove(o.id,e)} style={{cursor:"pointer",fontSize:14,lineHeight:1,padding:"0 2px"}}>×</span>
+          </span>
+        ))}
+      </div>
+      {open && (
+        <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,right:0,zIndex:20,
+          background:"var(--card)",border:"1px solid var(--border)",borderRadius:10,
+          boxShadow:"0 8px 24px rgba(0,0,0,.25)",padding:10}}>
+          {options.length > 6 && (
+            <input autoFocus value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search…"
+              onClick={e=>e.stopPropagation()}
+              style={{width:"100%",background:"var(--input-bg)",border:"1.5px solid var(--border)",borderRadius:8,
+                padding:"8px 12px",color:"var(--text)",fontSize:13,outline:"none",marginBottom:8,boxSizing:"border-box"}} />
+          )}
+          <div style={{maxHeight:200,overflowY:"auto",display:"flex",flexDirection:"column",gap:2}}>
+            {visible.length === 0 && <div style={{color:"var(--muted)",fontSize:13,padding:"6px 4px"}}>No matches.</div>}
+            {visible.map(o => (
+              <label key={o.id} onClick={e=>e.stopPropagation()}
+                style={{display:"flex",alignItems:"center",gap:8,fontSize:14,color:"var(--text)",
+                  cursor:"pointer",padding:"7px 6px",borderRadius:6}}>
+                <input type="checkbox" checked={selected.includes(o.id)} onChange={()=>toggle(o.id)} />
+                {o.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -11,10 +11,12 @@ import ReportView from "./ReportView";
 import ClientReport from "./ClientReport";
 import AdminApp from "./fullstack/AdminApp";
 import TesterApp from "./fullstack/TesterApp";
+import ManagementApp from "./management/ManagementApp";
 
 const ROLE_LABEL = {
   wordpress: { admin: "WordPress Admin" },
   fullstack: { admin: "Full-Stack Admin", tester: "Full-Stack Tester" },
+  management: { member: "Team Member" },
 };
 
 function ThemeToggle({ theme, onToggle }) {
@@ -27,10 +29,18 @@ function ThemeToggle({ theme, onToggle }) {
   );
 }
 
-function Header({ email, roleLabel, onSignOut, theme, onToggleTheme }) {
+function Header({ email, roleLabel, onSignOut, theme, onToggleTheme, showManagementLink, onOpenManagement }) {
   return (
     <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:12,
       padding:"14px 20px",borderBottom:"1px solid var(--border)"}}>
+      {showManagementLink && (
+        <button onClick={onOpenManagement}
+          style={{background:"none",border:"1px solid var(--accent2)",borderRadius:8,
+            color:"var(--accent2)",cursor:"pointer",padding:"6px 14px",fontSize:12,fontWeight:700,
+            fontFamily:"'Syne',sans-serif",letterSpacing:"0.02em"}}>
+          Management
+        </button>
+      )}
       <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       {roleLabel && (
         <span style={{fontSize:11,letterSpacing:"0.06em",textTransform:"uppercase",
@@ -67,6 +77,17 @@ function parseHash() {
     if (parts[1] === "my-tasks") return { name: "fs-my-tasks" };
     if (parts[1] === "task" && parts[2]) return { name: "fs-task-detail", id: parts[2] };
   }
+  if (parts[0] === "management") {
+    if (parts[1] === "tasks") {
+      if (parts[2] === "new") return { name: "mgmt-task-new" };
+      if (parts[2] && parts[3] === "edit") return { name: "mgmt-task-edit", id: parts[2] };
+      if (parts[2]) return { name: "mgmt-task-detail", id: parts[2] };
+    }
+    if (parts[1] === "members") return { name: "mgmt-members" };
+    if (parts[1] === "recipients") return { name: "mgmt-recipients" };
+    if (parts[1] === "settings") return { name: "mgmt-settings" };
+    return { name: "mgmt-dashboard" };
+  }
   return { name: "list" };
 }
 
@@ -84,6 +105,16 @@ const fsNav = {
   goFsTesters: () => { location.hash = "#/fs/testers"; },
   goFsMyTasks: () => { location.hash = "#/fs/my-tasks"; },
   goFsTaskDetail: (id) => { location.hash = `#/fs/task/${id}`; },
+};
+
+const mgmtNav = {
+  goMgmtDashboard: () => { location.hash = "#/management"; },
+  goMgmtTaskNew: () => { location.hash = "#/management/tasks/new"; },
+  goMgmtTaskDetail: (id) => { location.hash = `#/management/tasks/${id}`; },
+  goMgmtTaskEdit: (id) => { location.hash = `#/management/tasks/${id}/edit`; },
+  goMgmtMembers: () => { location.hash = "#/management/members"; },
+  goMgmtRecipients: () => { location.hash = "#/management/recipients"; },
+  goMgmtSettings: () => { location.hash = "#/management/settings"; },
 };
 
 export default function App() {
@@ -189,8 +220,33 @@ export default function App() {
     );
   }
 
+  const isAdmin = profile.role === "admin";
+  const isManagementRoute = route.name.startsWith("mgmt-");
+
+  if (profile.department === "management" && profile.role === "member") {
+    return (
+      <div>
+        <style>{FONTS}{css}</style>
+        <div style={{maxWidth:420,margin:"0 auto",padding:"80px 20px",textAlign:"center"}}>
+          <div style={{color:"var(--muted)",fontSize:14,marginBottom:20}}>
+            This account doesn't have a dashboard. Contact your admin.
+          </div>
+          <button onClick={() => supabase.auth.signOut()}
+            style={{background:"none",border:"1px solid var(--border)",borderRadius:8,
+              color:"var(--muted)",cursor:"pointer",padding:"8px 16px",fontSize:13}}>
+            Sign Out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   let body;
-  if (profile.department === "fullstack") {
+  if (isManagementRoute) {
+    body = isAdmin
+      ? <ManagementApp route={route} nav={mgmtNav} />
+      : <div style={{color:"var(--danger)",fontSize:14}}>You don't have access to Management.</div>;
+  } else if (profile.department === "fullstack") {
     body = profile.role === "admin"
       ? <AdminApp route={route} nav={fsNav} />
       : <TesterApp route={route} profile={profile} nav={fsNav} />;
@@ -230,13 +286,14 @@ export default function App() {
 
   const isWideRoute = route.name === "list" || route.name === "fs-tasks"
     || route.name === "fs-settings" || route.name === "fs-testers" || route.name === "fs-my-tasks"
-    || route.name === "fs-task-trash";
+    || route.name === "fs-task-trash" || isManagementRoute;
 
   return (
     <div>
       <style>{FONTS}{css}</style>
       <Header email={session.user.email} roleLabel={ROLE_LABEL[profile.department]?.[profile.role]}
-        onSignOut={() => supabase.auth.signOut()} theme={theme} onToggleTheme={toggleTheme} />
+        onSignOut={() => supabase.auth.signOut()} theme={theme} onToggleTheme={toggleTheme}
+        showManagementLink={isAdmin} onOpenManagement={mgmtNav.goMgmtDashboard} />
       <div style={{maxWidth: isWideRoute ? 900 : 820, margin:"0 auto", padding:"40px 20px 80px"}}>
         {body}
       </div>

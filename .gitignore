@@ -20,6 +20,9 @@ yarn-error.log*
 # vscode
 .vscode/
 
+# local Claude Code tool settings
+.claude/
+
 # idea
 .idea/
 

@@ -412,3 +412,9 @@ enabled = true
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# send-management-digest is called by pg_cron with a custom CRON_SECRET
+# bearer token (not a Supabase-issued JWT), so platform JWT verification
+# must stay disabled or the gateway rejects it before our own auth check runs.
+[functions.send-management-digest]
+verify_jwt = false
